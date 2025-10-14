@@ -4,6 +4,8 @@ import 'package:matka/providers/booking_providers.dart';
 import 'package:matka/providers/place_providers.dart';
 import 'package:matka/providers/packing_providers.dart';
 import 'package:matka/providers/buddy_providers.dart';
+import 'package:matka/providers/journal_providers.dart';
+import 'package:matka/providers/expense_providers.dart';
 import 'package:matka/services/export_import_service.dart';
 
 final exportImportServiceProvider = Provider<ExportImportService>((ref) {
@@ -13,5 +15,7 @@ final exportImportServiceProvider = Provider<ExportImportService>((ref) {
     places: ref.watch(placeRepositoryProvider),
     packing: ref.watch(packingRepositoryProvider),
     buddies: ref.watch(buddyRepositoryProvider),
+    journals: ref.watch(journalRepositoryProvider),
+    expenses: ref.watch(expenseRepositoryProvider),
   );
 });

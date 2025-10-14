@@ -5,7 +5,8 @@ import 'package:matka/providers/journey_providers.dart';
 import 'package:matka/views/journeys/add_journey_dialog.dart';
 import 'package:matka/views/journeys/booking_list_view.dart';
 import 'package:matka/providers/export_import_providers.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:matka/views/journal/journal_view.dart';
+import 'package:matka/views/expenses/expenses_view.dart';
 import 'package:share_plus/share_plus.dart';
 
 class JourneysListScreen extends ConsumerWidget {
@@ -84,6 +85,14 @@ class JourneysListScreen extends ConsumerWidget {
                       ),
                     ),
                     BookingListView(journeyId: j.id),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: JournalView(journeyId: j.id),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: ExpensesView(journeyId: j.id),
+                    ),
                   ],
                 );
               },

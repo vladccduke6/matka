@@ -8,11 +8,15 @@ import 'package:matka/models/booking.dart';
 import 'package:matka/models/place.dart';
 import 'package:matka/models/packing_item.dart';
 import 'package:matka/models/buddy.dart';
+import 'package:matka/models/journal_entry.dart';
+import 'package:matka/models/expense.dart';
 import 'package:matka/repositories/booking_repository.dart';
 import 'package:matka/repositories/place_repository.dart';
 import 'package:matka/repositories/packing_repository.dart';
 import 'package:matka/repositories/buddy_repository.dart';
 import 'package:matka/repositories/journey_repository.dart';
+import 'package:matka/repositories/journal_repository.dart';
+import 'package:matka/repositories/expense_repository.dart';
 
 class ExportResult {
   final File jsonFile;
@@ -27,17 +31,23 @@ class ExportImportService {
     required PlaceRepository places,
     required PackingRepository packing,
     required BuddyRepository buddies,
+    required JournalRepository journals,
+    required ExpenseRepository expenses,
   })  : _journeys = journeys,
         _bookings = bookings,
         _places = places,
         _packing = packing,
-        _buddies = buddies;
+    _buddies = buddies,
+        _journals = journals,
+        _expenses = expenses;
 
   final JourneyRepository _journeys;
   final BookingRepository _bookings;
   final PlaceRepository _places;
   final PackingRepository _packing;
   final BuddyRepository _buddies;
+  final JournalRepository _journals;
+  final ExpenseRepository _expenses;
 
   Future<ExportResult> exportJourney(String journeyId) async {
     // Fetch entities
@@ -47,6 +57,9 @@ class ExportImportService {
     final places = _places.getByJourney(journeyId);
     final packing = _packing.getByJourney(journeyId);
     final buddies = _buddies.forJourney(journeyId);
+    final journals = await _journals.getEntries(journeyId);
+    final journalImages = await _journals.collectImagePaths(journeyId);
+    final expenses = _expenses.getByJourney(journeyId);
 
     final jsonMap = {
       'journey': journey.toMap(),
@@ -54,13 +67,15 @@ class ExportImportService {
       'places': places.map((e) => e.toMap()).toList(),
       'packing': packing.map((e) => e.toMap()).toList(),
       'buddies': buddies.map((e) => e.toMap()).toList(),
+      'journalEntries': journals.map((e) => e.toMap()).toList(),
+      'expenses': expenses.map((e) => e.toMap()).toList(),
       'version': 1,
     };
 
     final dir = await getTemporaryDirectory();
     final file = File(p.join(dir.path, 'matka_export_${journey.title}_${journey.id}.json'));
     await file.writeAsString(const JsonEncoder.withIndent('  ').convert(jsonMap));
-    return ExportResult(file, const <String>[]);
+    return ExportResult(file, journalImages);
   }
 
   Future<Journey> importJourney(File jsonFile) async {
@@ -73,6 +88,14 @@ class ExportImportService {
     final places = (map['places'] as List<dynamic>).map((e) => Place.fromMap(e as Map<String, dynamic>)).toList();
     final packing = (map['packing'] as List<dynamic>).map((e) => PackingItem.fromMap(e as Map<String, dynamic>)).toList();
     final buddies = (map['buddies'] as List<dynamic>).map((e) => Buddy.fromMap(e as Map<String, dynamic>)).toList();
+    final journalEntries = (map['journalEntries'] as List<dynamic>?)
+      ?.map((e) => JournalEntry.fromMap(Map<String, dynamic>.from(e as Map)))
+      .toList() ??
+    const <JournalEntry>[];
+  final expenses = (map['expenses'] as List<dynamic>?)
+      ?.map((e) => Expense.fromMap(Map<String, dynamic>.from(e as Map)))
+      .toList() ??
+    const <Expense>[];
 
     // Persist journey and related items
     await _journeys.addJourney(journey);
@@ -88,6 +111,14 @@ class ExportImportService {
     for (final buddy in buddies) {
       await _buddies.addBuddy(buddy);
       await _buddies.attachToJourney(journey.id, buddy.id);
+    }
+    if (journalEntries.isNotEmpty) {
+      await _journals.importEntries(journey.id, journalEntries);
+    }
+    if (expenses.isNotEmpty) {
+      for (final expense in expenses) {
+        await _expenses.add(expense);
+      }
     }
 
     return journey;
