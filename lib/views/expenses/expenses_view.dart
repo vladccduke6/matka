@@ -17,7 +17,7 @@ class ExpensesView extends ConsumerStatefulWidget {
 }
 
 class _ExpensesViewState extends ConsumerState<ExpensesView> {
-  static const List<String> _currencyOptions = ['₹', '$', '€'];
+  static const List<String> _currencyOptions = ['\u20B9', '\$', '\u20AC'];
 
   Future<void> _addExpense(List<Buddy> buddies) async {
     final titleController = TextEditingController();
